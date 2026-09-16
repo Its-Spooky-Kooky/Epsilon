@@ -3,6 +3,7 @@ PROJECT_SPEC.md
 *.spec.md
 .env
 .env.*
+CHANGES TO BE MADE/
 
 # Miscellaneous
 *.class
