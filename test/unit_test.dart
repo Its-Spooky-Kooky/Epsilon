@@ -1,5 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:epsilon/app/core/app_settings_provider.dart';
+import 'package:epsilon/app/core/device_alarm_service.dart';
+import 'package:epsilon/app/core/plugin_interface.dart';
 import 'package:epsilon/plugins/cp_contest/series_parser.dart';
 import 'package:epsilon/plugins/cp_contest/models/platform_preference.dart';
 import 'package:epsilon/plugins/test/test_events_provider.dart';
@@ -97,14 +101,96 @@ void main() {
   });
 
   group('TestPlugin 30s Timer tests', () {
-    test('Generates single 30s timer event', () {
+    test('Generates test events including 30s timer and future dates', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
       final events = container.read(testEventsProvider);
-      expect(events.length, 1);
+      expect(events.length, 3);
       expect(events.first.id, 'test_30s_timer_event');
       expect(events.first.series, '30s Timer');
+      expect(events[1].id, 'test_tomorrow_event');
+      expect(events[2].id, 'test_future_event');
+    });
+  });
+
+  group('DeviceAlarmService tests', () {
+    test('Calculates 5-minute lead time for regular contests', () {
+      final service = DeviceAlarmService();
+      final now = DateTime.now();
+      final startTime = now.add(const Duration(hours: 2));
+      final event = EventItem(
+        id: 'contest_1',
+        pluginId: 'cp_contest',
+        platform: 'LeetCode',
+        series: 'Weekly',
+        title: 'Weekly Contest 415',
+        startTime: startTime,
+        endTime: startTime.add(const Duration(hours: 2)),
+        duration: const Duration(hours: 2),
+        url: '',
+      );
+
+      final alarmTime = service.calculateAlarmTime(event, leadMinutes: 5);
+      final expected = startTime.subtract(const Duration(minutes: 5));
+      expect(alarmTime.millisecondsSinceEpoch, expected.millisecondsSinceEpoch);
+    });
+
+    test('Preserves exact start time for 30s test event without subtracting into past', () {
+      final service = DeviceAlarmService();
+      final now = DateTime.now();
+      final startTime = now.add(const Duration(seconds: 30));
+      final event = EventItem(
+        id: 'test_30s',
+        pluginId: 'test',
+        platform: 'Test',
+        series: '30s Timer',
+        title: '30s Alarm Test Event',
+        startTime: startTime,
+        endTime: startTime.add(const Duration(minutes: 5)),
+        duration: const Duration(minutes: 5),
+        url: '',
+      );
+
+      final alarmTime = service.calculateAlarmTime(event, leadMinutes: 5);
+      expect(alarmTime.millisecondsSinceEpoch, startTime.millisecondsSinceEpoch);
+    });
+  });
+
+  group('App Settings & Appearance tests', () {
+    test('AppThemeMode keys and labels resolve properly', () {
+      expect(AppThemeMode.fromKey('amoled'), AppThemeMode.amoled);
+      expect(AppThemeMode.fromKey('midnight'), AppThemeMode.midnight);
+      expect(AppThemeMode.fromKey('obsidian'), AppThemeMode.obsidian);
+      expect(AppThemeMode.fromKey('unknown'), AppThemeMode.obsidian);
+    });
+
+    test('PluginColorBundle hex conversion is accurate', () {
+      const bundle = PluginColorBundle(
+        tagColor: Color(0xFF00E5FF),
+        textColor: Color(0xFF000000),
+      );
+      expect(bundle.tagHex, '#00E5FF');
+      expect(bundle.textHex, '#000000');
+    });
+
+    test('parseHexColor handles various hex formats and fallbacks', () {
+      expect(parseHexColor('#7C4DFF', Colors.white).toARGB32(), const Color(0xFF7C4DFF).toARGB32());
+      expect(parseHexColor('7C4DFF', Colors.white).toARGB32(), const Color(0xFF7C4DFF).toARGB32());
+      expect(parseHexColor('invalid', Colors.white).toARGB32(), Colors.white.toARGB32());
+    });
+
+    test('AppTimezoneState correctly identifies auto vs custom timezone', () {
+      const autoTz = AppTimezoneState(timezoneKey: 'auto', displayName: 'Auto');
+      expect(autoTz.isAuto, true);
+
+      const istTz = AppTimezoneState(
+        timezoneKey: 'IST',
+        displayName: 'India Standard Time',
+        customOffsetMinutes: 330,
+      );
+      expect(istTz.isAuto, false);
+      expect(istTz.customOffsetMinutes, 330);
     });
   });
 }

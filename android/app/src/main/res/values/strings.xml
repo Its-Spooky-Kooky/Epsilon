@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Epsilon</string>
+    <string name="widget_name">Epsilon Calendar</string>
+    <string name="widget_description">Monthly contest and event calendar widget</string>
+</resources>
+

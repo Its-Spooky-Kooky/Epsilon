@@ -136,7 +136,7 @@ class StorageService {
   }
 
   int getAlarmLeadMinutes() {
-    return _prefs.getInt(_keyAlarmLeadMinutes) ?? 15;
+    return _prefs.getInt(_keyAlarmLeadMinutes) ?? 5;
   }
 
   Future<void> setAlarmLeadMinutes(int minutes) async {
@@ -150,5 +150,40 @@ class StorageService {
 
   Future<void> saveUserAlarmIds(Set<String> ids) async {
     await _prefs.setStringList(_keyUserAlarmIds, ids.toList());
+  }
+
+  // --- Plugin Colors Customization ---
+  String getPluginTagColor(String pluginId, {String defaultHex = '#00E5FF'}) {
+    return _prefs.getString('epsilon_plugin_${pluginId}_tag_color') ?? defaultHex;
+  }
+
+  Future<void> setPluginTagColor(String pluginId, String hex) async {
+    await _prefs.setString('epsilon_plugin_${pluginId}_tag_color', hex);
+  }
+
+  String getPluginTextColor(String pluginId, {String defaultHex = '#000000'}) {
+    return _prefs.getString('epsilon_plugin_${pluginId}_text_color') ?? defaultHex;
+  }
+
+  Future<void> setPluginTextColor(String pluginId, String hex) async {
+    await _prefs.setString('epsilon_plugin_${pluginId}_text_color', hex);
+  }
+
+  // --- App Theme Preference ---
+  String getAppTheme({String defaultTheme = 'obsidian'}) {
+    return _prefs.getString('epsilon_app_theme') ?? defaultTheme;
+  }
+
+  Future<void> setAppTheme(String themeKey) async {
+    await _prefs.setString('epsilon_app_theme', themeKey);
+  }
+
+  // --- App Timezone Preference ---
+  String getAppTimezone({String defaultTz = 'auto'}) {
+    return _prefs.getString('epsilon_app_timezone') ?? defaultTz;
+  }
+
+  Future<void> setAppTimezone(String timezone) async {
+    await _prefs.setString('epsilon_app_timezone', timezone);
   }
 }

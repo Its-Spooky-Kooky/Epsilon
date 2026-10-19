@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:epsilon/app/features/plugins_store/plugin_appearance_section.dart';
 import 'test_events_provider.dart';
 
 class TestSettingsSheet extends ConsumerWidget {
@@ -8,6 +9,7 @@ class TestSettingsSheet extends ConsumerWidget {
   static void show(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: const Color(0xFF141414),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -18,7 +20,7 @@ class TestSettingsSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -46,7 +48,14 @@ class TestSettingsSheet extends ConsumerWidget {
             'Simulates a contest starting in 30 seconds to test alarms and countdowns.',
             style: TextStyle(fontSize: 13, color: Colors.white54),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          const PluginAppearanceSection(
+            pluginId: 'test',
+            pluginName: 'Test 30s',
+            defaultTagColor: Color(0xFF7C4DFF),
+            defaultTextColor: Colors.white,
+          ),
+          const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(

@@ -64,13 +64,8 @@ class AppEventsNotifier extends AsyncNotifier<List<EventItem>> {
         .read(activeDeviceAlarmIdsProvider.notifier)
         .reconcileWithAvailableEvents(combined);
 
-    // Update Android Home Widget
-    final upcoming = combined
-        .where((e) => e.status == EventStatus.upcoming)
-        .toList();
-    await widgetService.updateNextContestWidget(
-      upcoming.isNotEmpty ? upcoming.first : null,
-    );
+    // Update Android Home Screen Calendar Widget
+    await widgetService.updateCalendarWidgetEvents(combined);
 
     return combined;
   }

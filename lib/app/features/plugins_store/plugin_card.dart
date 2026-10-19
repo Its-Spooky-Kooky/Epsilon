@@ -6,8 +6,7 @@ class PluginCard extends StatelessWidget {
   final String description;
   final String version;
   final bool isInstalled;
-  final VoidCallback? onConfigure;
-  final VoidCallback? onToggleInstall;
+  final ValueChanged<bool> onToggleInstall;
 
   const PluginCard({
     super.key,
@@ -16,15 +15,14 @@ class PluginCard extends StatelessWidget {
     required this.description,
     required this.version,
     required this.isInstalled,
-    this.onConfigure,
-    this.onToggleInstall,
+    required this.onToggleInstall,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: const Color(0xFF141414),
         borderRadius: BorderRadius.circular(14),
@@ -34,91 +32,64 @@ class PluginCard extends StatelessWidget {
               : Colors.white.withValues(alpha: 0.04),
         ),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: isInstalled
-                      ? Colors.tealAccent.withValues(alpha: 0.12)
-                      : Colors.white.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        category.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                          color: Colors.white54,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                child: Text(
-                  category.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                    color: isInstalled ? Colors.tealAccent : Colors.white54,
-                  ),
-                ),
-              ),
-              Text(
-                'v$version',
-                style: const TextStyle(fontSize: 11, color: Colors.white30),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            description,
-            style: const TextStyle(
-              fontSize: 13,
-              color: Colors.white60,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              if (isInstalled && onConfigure != null) ...[
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white24),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: onConfigure,
-                  icon: const Icon(Icons.tune, size: 16),
-                  label: const Text('Configure Toggles', style: TextStyle(fontSize: 12)),
-                ),
-                const Spacer(),
-              ] else ...[
-                const Spacer(),
-              ],
-              TextButton(
-                style: TextButton.styleFrom(
-                  foregroundColor: isInstalled ? Colors.white54 : Colors.white,
-                  backgroundColor: isInstalled ? Colors.transparent : Colors.white12,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                onPressed: onToggleInstall,
-                child: Text(
-                  isInstalled ? 'ACTIVE' : 'INSTALL',
-                  style: TextStyle(
+                const SizedBox(height: 6),
+                Text(
+                  description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                    color: isInstalled ? Colors.tealAccent : Colors.white,
+                    color: Colors.white60,
+                    height: 1.35,
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Switch(
+            value: isInstalled,
+            activeThumbColor: Colors.tealAccent,
+            activeTrackColor: Colors.tealAccent.withValues(alpha: 0.3),
+            inactiveThumbColor: Colors.white38,
+            inactiveTrackColor: Colors.white12,
+            onChanged: onToggleInstall,
           ),
         ],
       ),

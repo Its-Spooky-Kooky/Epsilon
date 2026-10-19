@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/app_theme.dart';
+import 'app/core/app_settings_provider.dart';
 import 'app/core/storage_service.dart';
 import 'app/features/home/home_screen.dart';
 import 'app/features/plugins_store/plugins_screen.dart';
@@ -32,15 +33,17 @@ void main() async {
   );
 }
 
-class EpsilonApp extends StatelessWidget {
+class EpsilonApp extends ConsumerWidget {
   const EpsilonApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(appThemeNotifierProvider);
+
     return MaterialApp(
       title: 'Epsilon',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.getTheme(themeMode),
       home: const MainNavigationShell(),
     );
   }
@@ -82,7 +85,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
             BottomNavigationBarItem(
               icon: Icon(Icons.grid_view_outlined),
               activeIcon: Icon(Icons.grid_view),
-              label: 'Plugins',
+              label: 'Marketplace',
             ),
           ],
         ),

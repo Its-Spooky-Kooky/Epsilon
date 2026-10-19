@@ -30,6 +30,6 @@ void main() {
 
     expect(find.text('EPSILON'), findsOneWidget);
     expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Plugins'), findsOneWidget);
+    expect(find.text('Marketplace'), findsOneWidget);
   });
 }

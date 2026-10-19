@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:epsilon/app/core/storage_service.dart';
+import 'package:epsilon/app/features/plugins_store/plugin_appearance_section.dart';
 import 'cp_contest_plugin.dart';
 
 class CpPluginSettingsSheet extends ConsumerWidget {
@@ -120,7 +121,14 @@ class CpPluginSettingsSheet extends ConsumerWidget {
               Expanded(
                 child: ListView(
                   controller: scrollController,
-                  children: prefsMap.values.map((platformPref) {
+                  children: [
+                    const PluginAppearanceSection(
+                      pluginId: 'cp_contest',
+                      pluginName: 'CP Contest',
+                      defaultTagColor: Color(0xFF2979FF),
+                      defaultTextColor: Color(0xFFFFFFFF),
+                    ),
+                    ...prefsMap.values.map((platformPref) {
                     final isPlatformOn = platformPref.isEnabled;
                     final notifier = ref.read(cpPreferencesProvider.notifier);
 
@@ -200,9 +208,10 @@ class CpPluginSettingsSheet extends ConsumerWidget {
                         ],
                       ),
                     );
-                  }).toList(),
-                ),
+                  }),
+                ],
               ),
+            ),
             ],
           ),
         );

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,14 +29,13 @@ class ActiveDeviceAlarmIdsNotifier extends Notifier<Set<String>> {
 
     if (current.contains(event.id)) {
       // User requested to turn off alarm
+      await alarmService.cancelAlarm(event.id);
       current.remove(event.id);
       state = current;
       await storage.saveUserAlarmIds(current);
-      // Open device clock so user can review/dismiss
-      await alarmService.showAlarms();
       return false;
     } else {
-      // User requested to set alarm
+      // User requested to set alarm (default 5 mins lead)
       final leadMinutes = storage.getAlarmLeadMinutes();
       final success = await alarmService.setAlarmForEvent(event, leadMinutes: leadMinutes);
       if (success) {
@@ -49,60 +49,100 @@ class ActiveDeviceAlarmIdsNotifier extends Notifier<Set<String>> {
   }
 
   Future<void> reconcileWithAvailableEvents(List<EventItem> availableEvents) async {
-    final availableIds = availableEvents.map((e) => e.id).toSet();
-    final current = Set<String>.from(state);
-    final filtered = current.intersection(availableIds);
-    if (filtered.length != current.length) {
-      state = filtered;
-      final storage = ref.read(storageServiceProvider);
-      await storage.saveUserAlarmIds(filtered);
+    if (availableEvents.isEmpty) return;
+
+    final now = DateTime.now();
+    // Only clean up alarms for events that are actually in the past (ended)
+    final pastEventIds = availableEvents
+        .where((e) => e.endTime.isBefore(now))
+        .map((e) => e.id)
+        .toSet();
+
+    if (pastEventIds.isNotEmpty) {
+      final current = Set<String>.from(state);
+      final remaining = current.difference(pastEventIds);
+      if (remaining.length != current.length) {
+        state = remaining;
+        final storage = ref.read(storageServiceProvider);
+        await storage.saveUserAlarmIds(remaining);
+      }
     }
   }
 }
 
 class DeviceAlarmService {
   static const MethodChannel _channel = MethodChannel('com.epsilon.app/device_clock');
+  final Map<String, Timer> _webTimers = {};
 
   DeviceAlarmService();
 
-  /// Sets an alarm in the native device Clock application
-  Future<bool> setAlarmForEvent(EventItem event, {int leadMinutes = 15}) async {
+  /// Calculates the exact trigger time for an event.
+  /// If the event begins in less than `leadMinutes` (e.g. 30s test event),
+  /// the alarm triggers at `event.startTime`.
+  /// Otherwise, it triggers `leadMinutes` before `event.startTime`.
+  DateTime calculateAlarmTime(EventItem event, {int leadMinutes = 5}) {
+    final now = DateTime.now();
+    final leadDuration = Duration(minutes: leadMinutes);
+    final diff = event.startTime.difference(now);
+
+    if (diff <= leadDuration) {
+      return event.startTime;
+    } else {
+      return event.startTime.subtract(leadDuration);
+    }
+  }
+
+  /// Sets an exact alarm using the native Android AlarmManager (or in-memory Timer on web)
+  Future<bool> setAlarmForEvent(EventItem event, {int leadMinutes = 5}) async {
+    final effectiveAlarmTime = calculateAlarmTime(event, leadMinutes: leadMinutes);
+    final epochMillis = effectiveAlarmTime.millisecondsSinceEpoch;
+    final title = '${event.platform}: ${event.title}';
+    final diffToStart = event.startTime.difference(effectiveAlarmTime);
+    final message = diffToStart.inMinutes > 0
+        ? 'Contest starts in ${diffToStart.inMinutes} minutes!'
+        : 'Contest is starting now!';
+
     if (kIsWeb) {
-      debugPrint('Device alarms not supported on web.');
-      return false;
+      final delay = effectiveAlarmTime.difference(DateTime.now());
+      _webTimers[event.id]?.cancel();
+      if (!delay.isNegative) {
+        _webTimers[event.id] = Timer(delay, () {
+          debugPrint('WEB ALARM TRIGGERED: $title - $message');
+        });
+      }
+      return true;
     }
 
     try {
-      final alarmTime = event.startTime.subtract(Duration(minutes: leadMinutes));
-      final now = DateTime.now();
-
-      // If the alarm time is already in the past, ring in 1 minute or at start time
-      final effectiveAlarmTime = alarmTime.isBefore(now) ? event.startTime : alarmTime;
-
-      final title = ': ';
-
       final bool? success = await _channel.invokeMethod<bool>('setAlarm', {
-        'hour': effectiveAlarmTime.hour,
-        'minutes': effectiveAlarmTime.minute,
+        'id': event.id,
+        'epochMillis': epochMillis,
         'title': title,
-        'skipUi': true,
+        'message': message,
       });
 
       return success ?? false;
     } catch (e) {
-      debugPrint('Error invoking setAlarm: ');
+      debugPrint('Error invoking setAlarm: $e');
       return false;
     }
   }
 
-  /// Opens the device Clock app alarms list
-  Future<bool> showAlarms() async {
-    if (kIsWeb) return false;
+  /// Cancels an alarm directly in the native Android AlarmManager
+  Future<bool> cancelAlarm(String eventId) async {
+    if (kIsWeb) {
+      _webTimers[eventId]?.cancel();
+      _webTimers.remove(eventId);
+      return true;
+    }
+
     try {
-      final bool? success = await _channel.invokeMethod<bool>('showAlarms');
+      final bool? success = await _channel.invokeMethod<bool>('cancelAlarm', {
+        'id': eventId,
+      });
       return success ?? false;
     } catch (e) {
-      debugPrint('Error invoking showAlarms: ');
+      debugPrint('Error invoking cancelAlarm: $e');
       return false;
     }
   }
